@@ -1,4 +1,4 @@
-export enum role {
+export enum roleTypes {
     ADMIN = 'Administrateur',
     Normal = 'Normal',
     Premium = 'Premium ',
