@@ -1,6 +1,8 @@
 require('dotenv').config();
 
+const passport= require('passport')
 const user = require("../models/user");
+const Role = require("../models/role");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const secretKey = process.env.JWT_SECRET_KEY;
@@ -49,24 +51,35 @@ const login = (req, res, next) => {
           if (err) {
             res.status(500).json({
               message: `${err}`,
-            })
+            });
           }
           else if (result) {
-            let token = jwt.sign({ 
-                username: foundUser.username,
-                role: foundUser.role.role_id,
-                email: foundUser.email,
-             }, secretKey, { expiresIn: '2h' });
-            res.status(200).json({
-              message: 'Logged In OK',
-              token
-            })
+            console.log(foundUser.role);
+            Role.findOne( {_id:foundUser.role})
+              .then(foundRole => {
+                console.log(foundRole)
+                let tokenPayload = {
+                  username: foundUser.username,
+                  email: foundUser.email,
+                  role: foundRole.rolename 
+                };
+
+                let token = jwt.sign(tokenPayload, secretKey, { expiresIn: '2h' });
+                res.status(200).json({
+                  message: 'Logged In OK',
+                  token
+                });
+              })
+              .catch(error => {
+                res.status(500).json({
+                  message: `Error finding role: ${error}`,
+                });
+              });
           } 
           else {
-
             res.status(403).json({
               message: 'Password mismatch',
-            })
+            });
           }
         });
       } 
@@ -77,6 +90,8 @@ const login = (req, res, next) => {
       }
     });
 };
+
+
 
 module.exports = {
   register,
