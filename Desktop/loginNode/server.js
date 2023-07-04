@@ -9,7 +9,8 @@ const passport = require('passport');
 const passportSetup = require('./middlewares/passport')
 const userRoute = require ('./routes/userRoute')
 const roleRoute = require ('./routes/roleRoute')
-const authRoute = require ('./routes/auth')
+const authRoute = require ('./routes/auth');
+const roleInit = require('./services/roleInit');
 
 
 // CONNECTION
@@ -51,14 +52,14 @@ app.use(cors({
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: false
 }));
-
+//Role Init 
+roleInit();
 // SERVER
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
 //EndPoints
-
 app.use('/api/user',userRoute)
 app.use('/api/role',roleRoute)
 app.use('/api/',authRoute)

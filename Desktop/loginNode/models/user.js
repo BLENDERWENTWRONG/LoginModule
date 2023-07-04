@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema
+const Schema = mongoose.Schema;
+const Role = require('../models/role');  // Import the Role model
+
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -17,11 +19,11 @@ const userSchema = new mongoose.Schema({
     },
     adresse: {
         type: String,
-        required: true
+        required: false
     },
     phone: {
         type: Number,
-        required: true
+        required: false
     },
     age: {
         type: Number,
@@ -34,7 +36,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Role'
+        ref: 'role'
     },
     premium:{
         type:Boolean,

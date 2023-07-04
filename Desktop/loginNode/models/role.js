@@ -4,7 +4,6 @@ const Schema =mongoose.Schema
 const roleSchema = new mongoose.Schema({
   roleName: {
     type: String,
-    enum: ['admin','premium','normal','autre'],
   }
 }
 

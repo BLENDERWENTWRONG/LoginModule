@@ -1,4 +1,6 @@
 const user = require("../models/user");
+const role = require("../models/role");
+const sendCreationEmail  = require('../services/mailService');
 
 const findAll = (req, res, next) => {
     user
@@ -32,28 +34,48 @@ const findUser = (req, res, next) => {
 };
 
 const addUser = (req, res, next) => {
-    let newUser = new user({
-        username: req.body.username,
-        email: req.body.email,
-        password: req.body.password,
-        adresse: req.body.adresse,
-        age: req.body.age,
-        genre: req.body.genre,
-        role: req.body.roleid
-    });
-    newUser
-        .save()
-        .then((response) => {
-            res.status(201).json({
-                message: 'User added successfully',
-            });
-        })
-        .catch((error) => {
-            res.status(409).json({
-                message: `Error occurred ${error}`,
-            });
+    const roleName = req.body.rolename;
+    role
+      .findOne({ name: roleName })
+      .then((foundRole) => {
+        if (!foundRole) {
+          return res.status(404).json({
+            message: 'Role not found',
+          });
+        }
+  
+        const newUser = new user({
+          username: req.body.username,
+          email: req.body.email,
+          password: req.body.password,
+          adresse: req.body.adresse,
+          age: req.body.age,
+          genre: req.body.genre,
+          role: foundRole._id,
         });
-};
+  
+        newUser
+          .save()
+          .then(() => {
+            sendCreationEmail (newUser)
+            res.status(201).json({
+              message: 'User added successfully',
+            });
+          })
+          .catch((error) => {
+            res.status(409).json({
+              message: `Error occurred ${error}`,
+            });
+          });
+      })
+      .catch((error) => {
+        res.status(500).json({
+          message: `Error occurred while finding role: ${error}`,
+        });
+      });
+  };
+  
+  
 
 const editUser = (req, res, next) => {
     let userId = req.body.userID;
@@ -68,7 +90,7 @@ const editUser = (req, res, next) => {
     };
     user
         .findByIdAndUpdate(userId, { $set: userData })
-        .then((response) => {
+        .then(() => {
             res.status(200).json({
                 message: 'Updated successfully',
             });
@@ -96,10 +118,68 @@ const deleteUser = (req, res, next) => {
         });
 };
 
+
+
+const activatePremium = (req, res) => {
+  const userID = req.body.userID;
+
+  user.findById(userID)
+    .populate('role')
+    .exec()
+    .then(user => {
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (user.premium === 'yes') {
+        return res.status(200).json({
+          success: false,
+          message: 'User is already a premium user'
+        });
+      }
+
+      if (user.role.name !== 'premium') {
+        return res.status(409).json({
+          success: false,
+          message: 'User is not a premium member'
+        });
+      }
+
+      user.premium = 'yes';
+      user.save()
+        .then(updatedUser => {
+          res.status(200).json({
+            success: true,
+            message: 'User premium activated',
+            user: updatedUser
+          });
+        })
+        .catch(error => {
+          res.status(500).json({
+            success: false,
+            message: 'Failed to activate user premium',
+            error: error.message
+          });
+        });
+    })
+    .catch(error => {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to find user',
+        error: error.message
+      });
+    });
+};
+
+
 module.exports = {
     findAll,
     findUser,
     addUser,
     deleteUser,
     editUser,
+    activatePremium,
 };

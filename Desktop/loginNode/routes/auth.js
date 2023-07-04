@@ -7,6 +7,7 @@ const passportSetup = require('../middlewares/passport');
 
  route.post('/register',authController.register)
  route.post('/login',authController.login)
+ ////////////// Google
  route.get("/login/success",(req,res)=>{
    if (req.user){
     res.statusCode(200).json({
@@ -28,13 +29,14 @@ const passportSetup = require('../middlewares/passport');
         message:`failed to connect: ${error}`
     })
  })
-route.get("google/callback",
+route.get("/google/callback",
     passport.authenticate("google",{
         successRedirect:process.env.CLIENT_URL,
         failureRedirect:"/login/failed"
     })
 )
 route.get("/google",passport.authenticate('google',['profile','email']));
+///////////////
 route.get("/logout",(req,res)=>{
     req.logout(),
     res.redirect(process.env.CLIENT_URL)

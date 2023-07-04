@@ -55,7 +55,7 @@ const editRole = (req, res, next) => {
         roleName: req.body.roleName,
     };
     role
-        .findByIdAndUpdate(userId, { $set: userData })
+        .findByIdAndUpdate(roleId, { $set: roleData })
         .then((response) => {
             res.status(200).json({
                 message: 'Updated successfully',
@@ -98,49 +98,63 @@ const findRoleID = (roleName) => {
   };
   
   const deleteRole = (req, res, next) => {
-    let roleID = req.body.roleID;
+    let roleID ;
+     findRoleID(req.body.roleName).then(
+  (response)=>{
+   roleID = response;
+   role.findById(roleID)
+   .then((foundRole) => {
+     if (!foundRole) {
+       return res.status(404).json({
+         message: 'Role not found',
+       });
+     }
+     if (foundRole.roleName === 'autre' || foundRole.roleName === 'admin'  ) {
+       return res.status(500).json({
+         message: 'Cannot Delete autre or admin',
+       });
+     }
+
+     findRoleID('autre')
+       .then((newRoleID) => {
+         user.updateMany({ role: roleID }, { role: newRoleID })
+           .then(() => {
+             role.findByIdAndRemove(roleID)
+               .then(() => {
+                 res.status(200).json({
+                   message: 'Deleted successfully',
+                 });
+               })
+               .catch((error) => {
+                 res.status(500).json({
+                   message: `An error occurred while deleting the role: ${error}`,
+                 });
+               });
+           })
+           .catch((error) => {
+             res.status(500).json({
+               message: `An error occurred while updating the users: ${error}`,
+             });
+           });
+       })
+       .catch((error) => {
+         res.status(500).json({
+           message: `An error occurred while finding the new role: ${error}`,
+         });
+       });
+   })
+   .catch((error) => {
+     res.status(500).json({
+       message: `An error occurred while finding the role: ${error}`,
+     });
+   });
+  }).catch((error)=>{
+    res.status(500).json({
+      message: `Role name is incorrect or role not found: ${error}`,
+    });
+  })
   
-    role.findById(roleID)
-      .then((foundRole) => {
-        if (!foundRole) {
-          return res.status(404).json({
-            message: 'Role not found',
-          });
-        }
-  
-        findRoleID('autre')
-          .then((newRoleID) => {
-            user.updateMany({ role: roleID }, { role: newRoleID })
-              .then(() => {
-                role.findByIdAndRemove(roleID)
-                  .then(() => {
-                    res.status(200).json({
-                      message: 'Deleted successfully',
-                    });
-                  })
-                  .catch((error) => {
-                    res.status(500).json({
-                      message: `An error occurred while deleting the role: ${error}`,
-                    });
-                  });
-              })
-              .catch((error) => {
-                res.status(500).json({
-                  message: `An error occurred while updating the users: ${error}`,
-                });
-              });
-          })
-          .catch((error) => {
-            res.status(500).json({
-              message: `An error occurred while finding the new role: ${error}`,
-            });
-          });
-      })
-      .catch((error) => {
-        res.status(500).json({
-          message: `An error occurred while finding the role: ${error}`,
-        });
-      });
+    
   };
   
 module.exports = {

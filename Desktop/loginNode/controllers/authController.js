@@ -5,39 +5,61 @@ const user = require("../models/user");
 const Role = require("../models/role");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const sendCreationEmail  = require('../services/mailService');
 const secretKey = process.env.JWT_SECRET_KEY;
 const register = (req, res, next) => {
-  bcrypt.hash(req.body.password, 10, function (err, hashedPass) {
-    if (err) {
+  const roleName = req.body.rolename;
+  Role
+    .findOne({ name: roleName })
+    .then((foundRole) => {
+      if (!foundRole) {
+        return res.status(404).json({
+          message: 'Role not found',
+        });
+      }
+
+      bcrypt.hash(req.body.password, 10, function (err, hashedPass) {
+        if (err) {
+          return res.status(500).json({
+            error: err,
+          });
+        }
+
+        let newUser = new user({
+          username: req.body.username,
+          email: req.body.email,
+          password: hashedPass,
+          adresse: req.body.adresse,
+          age: req.body.age,
+          phone: req.body.phone,
+          genre: req.body.genre,
+          role: foundRole._id,
+        });
+        let emailDetails = {
+          username: req.body.username,
+          password: req.body.password,
+          email: req.body.email,
+        }
+        newUser
+          .save()
+          .then((response) => {
+            sendCreationEmail(emailDetails);
+            res.status(201).json({
+              message: 'User added successfully',
+            });
+          })
+          .catch((error) => {
+            res.status(409).json({
+              message: `Error occurred ${error}`,
+            });
+          });
+      });
+    })
+    .catch((error) => {
       res.status(500).json({
-        error: err,
+        message: `Error occurred while finding role: ${error}`,
       });
-    }
-
-    let newUser = new user({
-      username: req.body.username,
-      email: req.body.email,
-      password: hashedPass,
-      adresse: req.body.adresse,
-      age: req.body.age,
-      phone: req.body.phone,
-      genre: req.body.genre,
-      role: req.body.roleid,
     });
-
-    newUser
-      .save()
-      .then((response) => {
-        res.status(201).json({
-          message: "User added successfully",
-        });
-      })
-      .catch((error) => {
-        res.status(409).json({
-          message: `Error occurred ${error}`,
-        });
-      });
-  });
 };
 
 const login = (req, res, next) => {
